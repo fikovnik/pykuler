@@ -29,6 +29,5 @@ setup (
         "Programming Language :: Python :: 2.6",
     ],
     test_suite = 'test',
-    test_requires = ['mock>=0.7'],
     zip_safe = True,
 )
