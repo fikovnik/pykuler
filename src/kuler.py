@@ -1,8 +1,10 @@
-#!/usr/bin/env python
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 
 import BeautifulSoup
 import urllib2
 import logging
+
 
 def _urllib2Fetch(url):
     conn = None
@@ -12,9 +14,15 @@ def _urllib2Fetch(url):
     finally:
         conn.close()
 
+
 class Color:
 
-    def __init__(self, r, g, b):
+    def __init__(
+        self,
+        r,
+        g,
+        b,
+        ):
         self.r = r
         self.g = g
         self.b = b
@@ -26,22 +34,35 @@ class Color:
         return (self.r, self.g, self.b)
 
     def asRGB16(self):
-        return tuple([c*256 if c < 256 else c for c in self.as_rgb()])
+        return tuple([(c * 256 if c < 256 else c) for c in
+                     self.as_rgb()])
 
     @classmethod
     def fromHexRGB(cls, hexrgb):
         # http://stackoverflow.com/questions/214359/converting-hex-to-rgb-and-vice-versa
         hexrgb = hexrgb.lstrip('#')
         lv = len(hexrgb)
-        return cls(*tuple(int(hexrgb[i:i+lv/3], 16) for i in range(0, lv, lv/3)))
+        return cls(*tuple(int(hexrgb[i:i + lv / 3], 16) for i in
+                   range(0, lv, lv / 3)))
 
     @classmethod
-    def fromRGB(cls, r, g, b):
+    def fromRGB(
+        cls,
+        r,
+        g,
+        b,
+        ):
         return cls(r, g, b)
+
 
 class Theme:
 
-    def __init__(self, theme_id, title, colors):
+    def __init__(
+        self,
+        theme_id,
+        title,
+        colors,
+        ):
         self.theme_id = theme_id
         self.title = title
         self.colors = colors
@@ -63,14 +84,26 @@ class Theme:
 
 
 # TODO: make it testable
+
+
 class Kuler:
 
     def __init__(self, apiKey, urlFetch=_urllib2Fetch):
         self.apiKey = apiKey
         self.urlFetch = urlFetch
 
-    def search(self, themeID=None, userID=None, email=None, tag=None,
-               hex=None, title=None, startIndex=0, itemsPerPage=20, maxItems=100):
+    def search(
+        self,
+        themeID=None,
+        userID=None,
+        email=None,
+        tag=None,
+        hex=None,
+        title=None,
+        startIndex=0,
+        itemsPerPage=20,
+        maxItems=100,
+        ):
         """
         themeID - search on a specific themeID
         userID - search on a specific userID
@@ -94,14 +127,21 @@ class Kuler:
         elif title:
             searchQuery = 'title:%s' % title
         else:
-            raise AttributeException('At least one seach query must be specified')
+            raise AttributeException('At least one seach query must be specified'
+                    )
 
         return self._fetch('rss/search.cfm', searchQuery=searchQuery,
-                           startIndex=startIndex, itemsPerPage=itemsPerPage,
-                           maxItems=maxItems)
+                           startIndex=startIndex,
+                           itemsPerPage=itemsPerPage, maxItems=maxItems)
 
-    def list(self, listType='raiting', startIndex=0, itemsPerPage=20,
-             timeSpan=0, maxItems=100):
+    def list(
+        self,
+        listType='raiting',
+        startIndex=0,
+        itemsPerPage=20,
+        timeSpan=0,
+        maxItems=100,
+        ):
         """
             @param listType: Optional. One of the strings recent (the default), popular, rating, or random.
             @param startIndex: Optional. A 0-based index into the list that specifies the first item to display. Default is 0, which displays the first item in the list.
@@ -112,47 +152,61 @@ class Kuler:
 
         # Fetch HTML data from url
 
-        return self._fetch('rss/get.cfm', listType=listType,
-                           startIndex=startIndex, itemsPerPage=itemsPerPage,
-                           timeSpan=timeSpan, maxItems=maxItems)
+        return self._fetch(
+            'rss/get.cfm',
+            listType=listType,
+            startIndex=startIndex,
+            itemsPerPage=itemsPerPage,
+            timeSpan=timeSpan,
+            maxItems=maxItems,
+            )
 
-    def _fetch(self, service, startIndex=0, maxItems=100, **options):
+    def _fetch(
+        self,
+        service,
+        startIndex=0,
+        maxItems=100,
+        **options
+        ):
         itemsCount = 0
         while maxItems == None or itemsCount < maxItems:
-            url = 'http://kuler-api.adobe.com/%s?%s&startIndex=%d&key=%s' % (service,
-                                                                            '&'.join('%s=%s' %
-                                                                                     (i,str(j)) for i,j
-                                                                                     in
-                                                                                     options.items()),
-                                                                            startIndex,
-                                                                            self.apiKey)
+            url = \
+                'http://kuler-api.adobe.com/%s?%s&startIndex=%d&key=%s' \
+                % (service, '&'.join('%s=%s' % (i, str(j)) for (i,
+                   j) in options.items()), startIndex, self.apiKey)
             logging.debug('Fetching URL: %s' % url)
 
             # get the data
+
             data = self.urlFetch(url)
 
             # create the soup
+
             soup = BeautifulSoup.BeautifulSoup(data)
 
             # Note: all lower-case element names
+
             dataThemes = soup.findAll('kuler:themeitem')
 
             logging.debug('Found %d themes' % len(dataThemes))
 
             if len(dataThemes) == 0:
-               break
+                break
 
             for dataTheme in dataThemes:
                 themeId = dataTheme.find('kuler:themeid').contents[0]
                 title = dataTheme.find('kuler:themetitle').contents[0]
                 themeswatches = dataTheme.find('kuler:themeswatches')
-                colors = [Color.fromHexRGB(color.contents[0]) for color in themeswatches.findAll('kuler:swatchhexcolor')]
+                colors = [Color.fromHexRGB(color.contents[0])
+                          for color in
+                          themeswatches.findAll('kuler:swatchhexcolor')]
                 itemsCount += 1
                 theme = Theme(themeId, title, colors)
                 logging.debug('Decoded theme: %s' % theme)
                 yield theme
 
             startIndex += 1
+
 
 def main():
     import sys
@@ -162,8 +216,9 @@ def main():
         sys.exit(1)
 
     k = Kuler(sys.argv[1])
-    for i, theme in enumerate(k.list()):
+    for (i, theme) in enumerate(k.list()):
         print '%d. %s' % (i, theme)
+
 
 if __name__ == '__main__':
     main()
