@@ -70,7 +70,7 @@ class Kuler:
         self.urlFetch = urlFetch
 
     def search(self, themeID=None, userID=None, email=None, tag=None,
-               hex=None, title=None, startIndex=0, itemsPerPage=20, maxItems=None):
+               hex=None, title=None, startIndex=0, itemsPerPage=20, maxItems=100):
         """
         themeID - search on a specific themeID
         userID - search on a specific userID
@@ -101,7 +101,7 @@ class Kuler:
                            maxItems=maxItems)
 
     def list(self, listType='raiting', startIndex=0, itemsPerPage=20,
-             timeSpan=0, maxItems=None):
+             timeSpan=0, maxItems=100):
         """
             @param listType: Optional. One of the strings recent (the default), popular, rating, or random.
             @param startIndex: Optional. A 0-based index into the list that specifies the first item to display. Default is 0, which displays the first item in the list.
@@ -116,7 +116,7 @@ class Kuler:
                            startIndex=startIndex, itemsPerPage=itemsPerPage,
                            timeSpan=timeSpan, maxItems=maxItems)
 
-    def _fetch(self, service, startIndex=0, maxItems=None, **options):
+    def _fetch(self, service, startIndex=0, maxItems=100, **options):
         itemsCount = 0
         while maxItems == None or itemsCount < maxItems:
             url = 'http://kuler-api.adobe.com/%s?%s&startIndex=%d&key=%s' % (service,
@@ -154,6 +154,16 @@ class Kuler:
 
             startIndex += 1
 
+def main():
+    import sys
+
+    if len(sys.argv) != 2:
+        print 'Usage: %s <apiKey>' % sys.argv[0]
+        sys.exit(1)
+
+    k = Kuler(sys.argv[1])
+    for i, theme in enumerate(k.list()):
+        print '%d. %s' % (i, theme)
 
 if __name__ == '__main__':
     main()
