@@ -38,7 +38,7 @@ class Color:
 
     def asRGB16(self):
         return tuple([(c * 256 if c < 256 else c) for c in
-                     self.as_rgb()])
+                     self.asRGB()])
 
     @classmethod
     def fromHexRGB(cls, hexrgb):
@@ -206,6 +206,7 @@ class Kuler:
         self,
         service,
         startIndex=0,
+        itemsPerPage=20,
         maxItems=100,
         **options
         ):
@@ -219,7 +220,7 @@ class Kuler:
 
             # get the data
 
-            data = self._urlFetch(url)
+            data = Kuler._urlFetch(url)
 
             # create the soup
 
@@ -232,6 +233,7 @@ class Kuler:
             logging.debug('Found %d themes' % len(dataThemes))
 
             if len(dataThemes) == 0:
+                # no items found
                 break
 
             for dataTheme in dataThemes:
@@ -246,8 +248,13 @@ class Kuler:
                 logging.debug('Decoded theme: %s' % theme)
                 yield theme
 
+            if len(dataThemes) < itemsPerPage:
+                # last page
+                break
+
             startIndex += 1
 
+    @staticmethod
     def _urlFetch(url):
         """
         Helper function that returns a content of the given url using the urllib2
@@ -267,12 +274,13 @@ def main():
     """
     import sys
 
-    if len(sys.argv) != 2:
-        print 'Usage: %s <apiKey>' % sys.argv[0]
+    if not len(sys.argv) in [2,3]:
+        print 'Usage: %s <apiKey> [<themeID>]' % sys.argv[0]
         sys.exit(1)
 
     k = Kuler(sys.argv[1])
-    for (i, theme) in enumerate(k.list()):
+    themes = k.search(themeID=sys.argv[2]) if len(sys.argv) == 3 else k.list()
+    for (i, theme) in enumerate(themes):
         print '%d. %s' % (i, theme)
 
 
