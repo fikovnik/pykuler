@@ -1,21 +1,24 @@
 #!/usr/bin/python
-# -*- coding: utf-8 -*-
+"""
+Unofficial API for Adobe Kuler service (kuler.adobe.com).
+
+Sample example that prints out TOP 10 themes sorted by raiting (default)
+
+  k = Kuler(apiKey)
+  for (i, theme) in enumerate(k.list(maxItems=10)):
+    print '%d. %s' % (i, theme)
+
+More information: http://learn.adobe.com/wiki/display/kulerdev/B.+Feeds
+"""
 
 import BeautifulSoup
 import urllib2
 import logging
 
-
-def _urllib2Fetch(url):
-    conn = None
-    try:
-        conn = urllib2.urlopen(url)
-        return conn.read()
-    finally:
-        conn.close()
-
-
 class Color:
+    """
+    Class wrapping an RGB color
+    """
 
     def __init__(
         self,
@@ -39,6 +42,10 @@ class Color:
 
     @classmethod
     def fromHexRGB(cls, hexrgb):
+        """
+        Factory method that creates a Color instance from HTML like color string
+        #rrggbb with 8 or 16 bit.
+        """
         # http://stackoverflow.com/questions/214359/converting-hex-to-rgb-and-vice-versa
         hexrgb = hexrgb.lstrip('#')
         lv = len(hexrgb)
@@ -56,16 +63,27 @@ class Color:
 
 
 class Theme:
+    """
+    Class wrapping a Kuler theme.
+
+    Properties:
+    title: theme title name
+    themeId: theme ID
+    colors: a tuple of Color instances in defined in the theme
+    """
 
     def __init__(
         self,
-        theme_id,
+        themeID,
         title,
         colors,
         ):
-        self.theme_id = theme_id
+        """
+        colors: Mandatory. Parameter that is an iterable object containing Color instances.
+        """
+        self.themeID = themeID
         self.title = title
-        self.colors = colors
+        self.colors = tuple(colors)
 
     def __getitem__(self, index):
         return self.colors[index]
@@ -77,20 +95,22 @@ class Theme:
         return iter(self.colors)
 
     def __str__(self):
-        return 'Theme: %s (%s)' % (self.theme_id, self.title)
+        return 'Theme: %s (%s)' % (self.themeID, self.title)
 
     def items(self):
         return self.colors
 
-
-# TODO: make it testable
-
-
 class Kuler:
+    """
+    Facade of the Kuler API
+    """
 
-    def __init__(self, apiKey, urlFetch=_urllib2Fetch):
+    def __init__(self, apiKey):
+        """
+        apiKey: Mandatory. API key obtained from the Kuler service. (You can
+        get it from http://kuler.adobe.com/api)
+        """
         self.apiKey = apiKey
-        self.urlFetch = urlFetch
 
     def search(
         self,
@@ -105,13 +125,24 @@ class Kuler:
         maxItems=100,
         ):
         """
-        themeID - search on a specific themeID
-        userID - search on a specific userID
-        email - search on a specific email
-        tag - search on a tag word
-        hex - search on a hex color value (can be in the format "ABCDEF" or "0xABCDEF")
-        title - search on a theme title
-        """
+        Returns a generator of themes from a feeds that meet specified search criteria.
+
+        Caller needs to specify one of the following parameter:
+        themeID: search on a specific themeID
+        userID: search on a specific userID
+        email: search on a specific email
+        tag: search on a tag word
+        hex: search on a hex color value (can be in the format "ABCDEF" or "0xABCDEF")
+        title: search on a theme title
+
+        startIndex: Optional. A 0-based index into the list that specifies the
+        first item to display. Default is 0, which displays the first item in
+        the list.
+
+        itemsPerPage: Optional. The maximum number of items to display on a
+        page, in the range 1..100. Default is 20.
+
+        maxItems: Optional. The number of items returned at most.  """
 
         searchQuery = None
         if themeID:
@@ -143,12 +174,22 @@ class Kuler:
         maxItems=100,
         ):
         """
-            @param listType: Optional. One of the strings recent (the default), popular, rating, or random.
-            @param startIndex: Optional. A 0-based index into the list that specifies the first item to display. Default is 0, which displays the first item in the list.
-            @param itemsPerPage: Optional. The maximum number of items to display on a page, in the range 1..100. Default is 20.
-            @param timeSpan: Optional. Value in days to limit the set of themes retrieved. Default is 0, which retrieves all themes without time limit.
-            {@link http://learn.adobe.com/wiki/display/kulerdev/B.+Feeds}
-        """
+        Returns a generator of themes from a feeds of a specified type. 
+
+        listType: Optional. One of the strings recent (the default), popular,
+        rating, or random.
+
+        startIndex: Optional. A 0-based index into the list that specifies the
+        first item to display. Default is 0, which displays the first item in
+        the list.
+
+        itemsPerPage: Optional. The maximum number of items to display on a
+        page, in the range 1..100. Default is 20.
+
+        timeSpan: Optional. Value in days to limit the set of themes retrieved.
+        Default is 0, which retrieves all themes without time limit.  
+
+        maxItems: Optional. The number of items returned at most.  """
 
         # Fetch HTML data from url
 
@@ -178,7 +219,7 @@ class Kuler:
 
             # get the data
 
-            data = self.urlFetch(url)
+            data = self._urlFetch(url)
 
             # create the soup
 
@@ -207,8 +248,23 @@ class Kuler:
 
             startIndex += 1
 
+    def _urlFetch(url):
+        """
+        Helper function that returns a content of the given url using the urllib2
+        library.
+        """
+        conn = None
+        try:
+            conn = urllib2.urlopen(url)
+            return conn.read()
+        finally:
+            conn.close()
+
 
 def main():
+    """
+    Sample example
+    """
     import sys
 
     if len(sys.argv) != 2:

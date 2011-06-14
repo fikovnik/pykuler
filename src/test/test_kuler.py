@@ -22,26 +22,28 @@ class KulerTest(unittest.TestCase):
         pass
 
     def testListingWithMaxItemsCount(self, count=10):
-        mockedFetch = Mock()
-        mockedFetch.return_value = read(os.path.join('test_data','one_result_per_page.xml'))
+        k = kuler.Kuler('key1')
 
-        k = kuler.Kuler('key1', urlFetch=mockedFetch)
+        k._urlFetch = Mock()
+        k._urlFetch.return_value = read(os.path.join('test_data','one_result_per_page.xml'))
+
         l = k.list(maxItems=count, itemsPerPage=1)
 
         self.assertEquals(count, len(list(l)))
-        self.assertEquals(count, mockedFetch.call_count)
+        self.assertEquals(count, k._urlFetch.call_count)
 
         args = [(('http://kuler-api.adobe.com/rss/get.cfm?listType=raiting&itemsPerPage=1&timeSpan=0&startIndex=%d&key=key1'
            % i,), {}) for i in range(count)]
-        self.assertEquals(args, mockedFetch.call_args_list)
+        self.assertEquals(args, k._urlFetch.call_args_list)
 
     def testSearch(self):
-        mockedFetch = Mock()
+        k = kuler.Kuler('key1')
+
+        k._urlFetch = Mock()
         return_files = ['no-values.xml', 'no-values.xml', 'search-result.xml']
-        mockedFetch.side_effect = lambda x : read(os.path.join('test_data',
+        k._urlFetch.side_effect = lambda x : read(os.path.join('test_data',
                                                                return_files.pop()))
 
-        k = kuler.Kuler('key1', urlFetch=mockedFetch)
         l = list(k.search(themeID='themeId'))
 
         self.assertEquals(1, len(l))
